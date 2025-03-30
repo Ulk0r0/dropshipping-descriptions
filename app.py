@@ -4,7 +4,7 @@ from transformers import pipeline
 # Cargar el modelo distilgpt2 (ligero y rápido)
 @st.cache_resource
 def load_generator():
-    return pipeline("text-generation", model="distilgpt2")
+    return pipeline("text-generation", model="facebook/opt-125m")
 
 generador = load_generator()
 
