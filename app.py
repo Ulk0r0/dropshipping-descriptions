@@ -42,7 +42,7 @@ st.title("Generador de Descripciones de Productos para Dropshipping")
 
 producto = st.text_input("Producto (ej. 'Auriculares inalámbricos, Bluetooth 5.0, 20h batería, negros')")
 tono = st.selectbox("Tono", ["informal", "profesional", "creativo"])
-keywords = st.text_input("Palabras clave SEO (separadas por comas)", "auriculares inalámbricos, Bluetooth").split(", ")
+keywords = st.text_input("Palabras clave SEO (separadas por comas)", "auriculares inalámbricos,主�Bluetooth").split(", ")
 
 st.subheader("Frases personalizadas")
 num_frases = st.number_input("¿Cuántas frases quieres añadir?", min_value=0, max_value=5, value=1)
@@ -56,17 +56,9 @@ for i in range(num_frases):
 if st.button("Generar Descripción"):
     if producto and frases_posiciones:
         with st.spinner("Generando descripción..."):
-            # Generar descripción base
             descripcion_base = generar_descripcion_base(producto, tono, keywords)
-            # Insertar frases
-            descripcion_final = insertar_frases(descripcion_base, frases_posiciones)
-        st.subheader("Descripción generada:")
-        st.write(descripcion_final)
-    else:
-        st.error("Por favor, ingresa el producto y al menos una frase.")
             descripcion_con_frases = insertar_frases(descripcion_base, frases_posiciones)
-            descripcion_final = validar_descripcion(descripcion_con_frases)
         st.subheader("Descripción generada:")
-        st.write(descripcion_final)
+        st.write(descripcion_con_frases)
     else:
         st.error("Por favor, ingresa el producto y al menos una frase.")
