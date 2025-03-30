@@ -1,19 +1,23 @@
 import streamlit as st
 from transformers import pipeline
 
-# Cargar el modelo TinyLLaMA localmente
+# Cargar el modelo distilgpt2 (ligero y rápido)
 @st.cache_resource
 def load_generator():
-    return pipeline("text-generation", model="TinyLlama/TinyLlama-1.1B-Chat-v1.0")
+    return pipeline("text-generation", model="distilgpt2")
 
 generador = load_generator()
 
-# Función para generar descripción base
+# Función para generar descripción base con prompt mejorado
 def generar_descripcion_base(producto, tono, keywords):
-    prompt = f"Eres un experto en marketing para dropshipping. Escribe una descripción breve y atractiva para: {producto}. " \
-             f"Usa un tono {tono}, optimiza para SEO con: {', '.join(keywords)}. 3-4 oraciones, termina con una llamada a la acción."
-    resultado = generador(prompt, max_length=120, temperature=0.7, top_k=50, num_return_sequences=1)[0]["generated_text"]
-    return resultado.replace(prompt, "").strip()
+    prompt = f"Actúa como experto en marketing para dropshipping. Crea una descripción atractiva de 3-4 oraciones para: {producto}. " \
+             f"Usa un tono {tono}, incluye estas palabras clave SEO: {', '.join(keywords)}, y termina con una llamada a la acción clara."
+    resultado = generador(prompt, max_length=100, temperature=0.8, top_p=0.9, num_return_sequences=1)[0]["generated_text"]
+    texto = resultado.replace(prompt, "").strip()
+    ultimo_punto = texto.rfind(".")
+    if ultimo_punto != -1:
+        texto = texto[:ultimo_punto + 1]
+    return texto if texto else "No se pudo generar una descripción válida."
 
 # Función para insertar frases
 def insertar_frases(descripcion_base, frases_posiciones):
