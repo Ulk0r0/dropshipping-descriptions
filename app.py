@@ -1,39 +1,19 @@
 import streamlit as st
-import requests
-import os
+from transformers import pipeline
 
-# Configurar API de Hugging Face con variable de entorno
-API_TOKEN = os.environ.get("HUGGINGFACE_TOKEN")
-if not API_TOKEN:
-    st.error("Error: No se encontró el token de Hugging Face. Configúralo en Streamlit Cloud.")
-    st.stop()
+# Cargar el modelo TinyLLaMA localmente
+@st.cache_resource
+def load_generator():
+    return pipeline("text-generation", model="TinyLlama/TinyLlama-1.1B-Chat-v1.0")
 
-headers = {"Authorization": f"Bearer {API_TOKEN}"}
-API_URL = "https://api-inference.huggingface.co/models/gpt2-medium"
+generador = load_generator()
 
 # Función para generar descripción base
 def generar_descripcion_base(producto, tono, keywords):
     prompt = f"Eres un experto en marketing para dropshipping. Escribe una descripción breve y atractiva para: {producto}. " \
              f"Usa un tono {tono}, optimiza para SEO con: {', '.join(keywords)}. 3-4 oraciones, termina con una llamada a la acción."
-    payload = {"inputs": prompt, "max_length": 120, "temperature": 0.7}
-    response = requests.post(API_URL, headers=headers, json=payload)
-    
-    # Verificar si la solicitud fue exitosa
-    if response.status_code != 200:
-        st.error(f"Error en la API: {response.status_code} - {response.text}")
-        return "No se pudo generar la descripción debido a un error en la API."
-    
-    # Intentar decodificar la respuesta
-    try:
-        data = response.json()
-        if isinstance(data, list) and len(data) > 0 and "generated_text" in data[0]:
-            return data[0]["generated_text"].replace(prompt, "").strip()
-        else:
-            st.error(f"Respuesta inesperada de la API: {data}")
-            return "Formato de respuesta inválido."
-    except requests.exceptions.JSONDecodeError:
-        st.error(f"Error decodificando JSON: {response.text}")
-        return "No se pudo procesar la respuesta de la API."
+    resultado = generador(prompt, max_length=120, temperature=0.7, top_k=50, num_return_sequences=1)[0]["generated_text"]
+    return resultado.replace(prompt, "").strip()
 
 # Función para insertar frases
 def insertar_frases(descripcion_base, frases_posiciones):
