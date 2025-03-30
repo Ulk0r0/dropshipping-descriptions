@@ -1,23 +1,34 @@
 import streamlit as st
 from transformers import pipeline
 
-# Cargar el modelo distilgpt2 (ligero y rápido)
+# Cargar el modelo OPT-350M con caché para optimizar recursos
 @st.cache_resource
 def load_generator():
-    return pipeline("text-generation", model="facebook/opt-125m")
+    try:
+        # Usar device=-1 para CPU (Streamlit Cloud no tiene GPU)
+        return pipeline("text-generation", model="facebook/opt-350m", device=-1)
+    except Exception as e:
+        st.error(f"Error cargando el modelo: {str(e)}")
+        return None
 
 generador = load_generator()
+if generador is None:
+    st.stop()
 
-# Función para generar descripción base con prompt mejorado
+# Función para generar descripción base con prompt optimizado
 def generar_descripcion_base(producto, tono, keywords):
-    prompt = f"Actúa como experto en marketing para dropshipping. Crea una descripción atractiva de 3-4 oraciones para: {producto}. " \
-             f"Usa un tono {tono}, incluye estas palabras clave SEO: {', '.join(keywords)}, y termina con una llamada a la acción clara."
-    resultado = generador(prompt, max_length=100, temperature=0.8, top_p=0.9, num_return_sequences=1)[0]["generated_text"]
-    texto = resultado.replace(prompt, "").strip()
-    ultimo_punto = texto.rfind(".")
-    if ultimo_punto != -1:
-        texto = texto[:ultimo_punto + 1]
-    return texto if texto else "No se pudo generar una descripción válida."
+    prompt = f"Soy un experto en marketing para dropshipping. Mi tarea es escribir una descripción atractiva de 3-4 oraciones para: {producto}. " \
+             f"El tono debe ser {tono}, optimizada para SEO con estas palabras clave: {', '.join(keywords)}. Termina con una llamada a la acción clara."
+    try:
+        resultado = generador(prompt, max_length=120, temperature=0.7, top_p=0.9, num_return_sequences=1, truncation=True)[0]["generated_text"]
+        texto = resultado.replace(prompt, "").strip()
+        ultimo_punto = texto.rfind(".")
+        if ultimo_punto != -1:
+            texto = texto[:ultimo_punto + 1]
+        return texto if texto else "No se pudo generar una descripción válida."
+    except Exception as e:
+        st.error(f"Error generando texto: {str(e)}")
+        return "Error al generar la descripción."
 
 # Función para insertar frases
 def insertar_frases(descripcion_base, frases_posiciones):
