@@ -3,7 +3,7 @@ import requests
 import os
 
 # Configurar API de Hugging Face con variable de entorno
-API_TOKEN = os.environ.get("HUGGINGFACE_TOKEN")  # Obtiene el token desde las variables de entorno
+API_TOKEN = os.environ.get("HUGGINGFACE_TOKEN")
 if not API_TOKEN:
     st.error("Error: No se encontró el token de Hugging Face. Configúralo en Streamlit Cloud.")
     st.stop()
@@ -17,7 +17,23 @@ def generar_descripcion_base(producto, tono, keywords):
              f"Usa un tono {tono}, optimiza para SEO con: {', '.join(keywords)}. 3-4 oraciones, termina con una llamada a la acción."
     payload = {"inputs": prompt, "max_length": 120, "temperature": 0.7}
     response = requests.post(API_URL, headers=headers, json=payload)
-    return response.json()[0]["generated_text"].replace(prompt, "").strip()
+    
+    # Verificar si la solicitud fue exitosa
+    if response.status_code != 200:
+        st.error(f"Error en la API: {response.status_code} - {response.text}")
+        return "No se pudo generar la descripción debido a un error en la API."
+    
+    # Intentar decodificar la respuesta
+    try:
+        data = response.json()
+        if isinstance(data, list) and len(data) > 0 and "generated_text" in data[0]:
+            return data[0]["generated_text"].replace(prompt, "").strip()
+        else:
+            st.error(f"Respuesta inesperada de la API: {data}")
+            return "Formato de respuesta inválido."
+    except requests.exceptions.JSONDecodeError:
+        st.error(f"Error decodificando JSON: {response.text}")
+        return "No se pudo procesar la respuesta de la API."
 
 # Función para insertar frases
 def insertar_frases(descripcion_base, frases_posiciones):
